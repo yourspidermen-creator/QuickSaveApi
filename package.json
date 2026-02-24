@@ -1,19 +1,15 @@
 {
   "name": "quicksaveapi",
   "version": "1.0.0",
-  "description": "YouTube and Social Media API with Proxy Rotation",
+  "description": "Video Downloader API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
- {
+  },
   "dependencies": {
-    "axios": "^1.x.x",
+    "axios": "^1.6.0",
     "cors": "^2.8.5",
-    "express": "^4.x.x",
-    "https-proxy-agent": "^7.x.x"
-  }
-
-  "engines": {
-    "node": "22.x"
+    "express": "^4.18.2",
+    "https-proxy-agent": "^7.0.2"
   }
 }
