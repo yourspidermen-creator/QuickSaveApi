@@ -1,10 +1,9 @@
 const express = require('express');
 const axios = require('axios');
 const { HttpsProxyAgent } = require('https-proxy-agent');
+const { exec } = require('child_process');
 
 const app = express();
-
-// পোর্ট ডিক্লারেশন (শুধুমাত্র একবার)
 const PORT = process.env.PORT || 10000;
 
 // আপনার WebShare প্রক্সি লিস্ট
@@ -21,8 +20,9 @@ const proxies = [
     'http://usiarqrc:1h9wgccswilx@23.26.53.37:6003'
 ];
 
+// হোম পেজ
 app.get('/', (req, res) => {
-    res.send('QuickSave API is running with Proxy Rotation!');
+    res.send('QuickSave API is live! Use /fetch or /download endpoints.');
 });
 
 // সোশ্যাল মিডিয়া ডেটা সংগ্রহের রাউট
@@ -30,7 +30,6 @@ app.get('/fetch', async (req, res) => {
     const targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).send('URL is required');
 
-    // র‍্যান্ডম প্রক্সি সিলেক্ট করা
     const randomProxy = proxies[Math.floor(Math.random() * proxies.length)];
     const agent = new HttpsProxyAgent(randomProxy);
 
@@ -46,12 +45,40 @@ app.get('/fetch', async (req, res) => {
         res.status(500).json({ 
             success: false, 
             error: error.message, 
-            proxyUsed: randomProxy.split('@')[1] // পাসওয়ার্ড হাইড করে শুধু আইপি দেখানো
+            proxyUsed: randomProxy.split('@')[1] 
         });
     }
 });
 
-// সার্ভার স্টার্ট (শুধুমাত্র একবার)
+// yt-dlp এর মাধ্যমে সরাসরি ডাউনলোড লিঙ্ক পাওয়ার রাউট
+app.get('/download', (req, res) => {
+    const videoUrl = req.query.url;
+    if (!videoUrl) return res.status(400).json({ success: false, message: 'URL is required' });
+
+    const randomProxy = proxies[Math.floor(Math.random() * proxies.length)];
+
+    // yt-dlp কমান্ড (প্রক্সিসহ সরাসরি লিঙ্ক বের করার জন্য -g ফ্ল্যাগ)
+    const command = `yt-dlp --proxy "${randomProxy}" -g "${videoUrl}"`;
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Failed to extract link', 
+                error: stderr 
+            });
+        }
+        const downloadUrl = stdout.trim();
+        res.json({
+            success: true,
+            title: "Link Generated Successfully",
+            download_link: downloadUrl,
+            proxy_used: randomProxy.split('@')[1]
+        });
+    });
+});
+
+// সার্ভার লিসেনিং
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server started on port ${PORT}`);
 });
