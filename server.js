@@ -2,8 +2,10 @@ const express = require('express');
 const axios = require('axios');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 
-const app = express(); // <--- এই লাইনটি অবশ্যই থাকতে হবে
-const PORT = process.env.PORT || 3000;
+const app = express();
+
+// পোর্ট ডিক্লারেশন (শুধুমাত্র একবার)
+const PORT = process.env.PORT || 10000;
 
 // আপনার WebShare প্রক্সি লিস্ট
 const proxies = [
@@ -23,7 +25,7 @@ app.get('/', (req, res) => {
     res.send('QuickSave API is running with Proxy Rotation!');
 });
 
-// সোশ্যাল মিডিয়া ডেটা সংগ্রহের একটি উদাহরণ রাউট
+// সোশ্যাল মিডিয়া ডেটা সংগ্রহের রাউট
 app.get('/fetch', async (req, res) => {
     const targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).send('URL is required');
@@ -41,15 +43,15 @@ app.get('/fetch', async (req, res) => {
         });
         res.json({ success: true, data: response.data });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message, proxyUsed: randomProxy });
+        res.status(500).json({ 
+            success: false, 
+            error: error.message, 
+            proxyUsed: randomProxy.split('@')[1] // পাসওয়ার্ড হাইড করে শুধু আইপি দেখানো
+        });
     }
 });
 
-// সার্ভার লিসেনিং (এখানেই আপনার এরর ছিল)
+// সার্ভার স্টার্ট (শুধুমাত্র একবার)
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-});
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`API is active on port ${PORT}`);
 });
