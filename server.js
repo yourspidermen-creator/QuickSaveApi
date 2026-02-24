@@ -5,10 +5,11 @@ const { exec } = require('child_process');
 const cors = require('cors');
 
 const app = express();
-app.use(cors()); // ফ্রন্টএন্ড থেকে এক্সেস করার জন্য
+app.use(cors()); 
 
 const PORT = process.env.PORT || 10000;
 
+// আপনার প্রক্সি লিস্ট
 const proxies = [
     'http://usiarqrc:1h9wgccswilx@31.59.20.176:6754',
     'http://usiarqrc:1h9wgccswilx@23.95.150.145:6114',
@@ -26,21 +27,32 @@ app.get('/', (req, res) => {
     res.send('QuickSave API is live! Use /download?url=YOUR_URL');
 });
 
-// এই রাউটটিই আপনার এরর দিচ্ছে, তাই এটি নিশ্চিতভাবে যোগ করুন
+// ভিডিও ডাউনলোড লিঙ্ক জেনারেট করার রাউট
 app.get('/download', (req, res) => {
     const videoUrl = req.query.url;
     if (!videoUrl) return res.status(400).json({ success: false, message: 'URL is required' });
 
+    // র‍্যান্ডম প্রক্সি সিলেক্ট
     const randomProxy = proxies[Math.floor(Math.random() * proxies.length)];
-    const command = `yt-dlp --proxy "${randomProxy}" -g "${videoUrl}"`;
+
+    // npx ব্যবহার করে সরাসরি বাইনারি কল করা (Render-এর জন্য সবচেয়ে নিরাপদ)
+    const command = `npx yt-dlp-exec "${videoUrl}" --proxy "${randomProxy}" -g`;
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
-            return res.status(500).json({ success: false, error: stderr });
+            console.error("Error details:", stderr);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Failed to extract link', 
+                error: stderr 
+            });
         }
+        
+        const downloadUrl = stdout.trim();
         res.json({
             success: true,
-            download_link: stdout.trim(),
+            title: "Download Link Generated",
+            download_link: downloadUrl,
             proxy_used: randomProxy.split('@')[1]
         });
     });
