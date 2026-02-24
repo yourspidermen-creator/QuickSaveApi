@@ -1,58 +1,44 @@
-const express = require('express');
-const ytdl = require('@distube/ytdl-core');
-const cors = require('cors');
+const axios = require('axios');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 
-const app = express();
-app.use(cors());
+// আপনার WebShare প্রক্সি লিস্ট (A to Z list)
+const proxies = [
+    'http://usiarqrc:1h9wgccswilx@31.59.20.176:6754',
+    'http://usiarqrc:1h9wgccswilx@23.95.150.145:6114',
+    'http://usiarqrc:1h9wgccswilx@198.23.239.134:6540',
+    'http://usiarqrc:1h9wgccswilx@45.38.107.97:6014',
+    'http://usiarqrc:1h9wgccswilx@107.172.163.27:6543',
+    'http://usiarqrc:1h9wgccswilx@198.105.121.200:6462',
+    'http://usiarqrc:1h9wgccswilx@64.137.96.74:6641',
+    'http://usiarqrc:1h9wgccswilx@216.10.27.159:6837',
+    'http://usiarqrc:1h9wgccswilx@142.111.67.146:5611',
+    'http://usiarqrc:1h9wgccswilx@23.26.53.37:6003'
+];
 
-app.get('/download', async (req, res) => {
-    const videoURL = req.query.url;
-    
-    if (!videoURL) {
-        return res.status(400).json({ error: 'ভিডিও লিঙ্ক প্রদান করুন।' });
-    }
+// র‍্যান্ডম প্রক্সি পাওয়ার ফাংশন
+function getRandomProxy() {
+    return proxies[Math.floor(Math.random() * proxies.length)];
+}
+
+// সোশ্যাল মিডিয়া রিকোয়েস্ট হ্যান্ডলার
+async function handleSocialRequest(url) {
+    const proxyUrl = getRandomProxy();
+    const agent = new HttpsProxyAgent(proxyUrl);
 
     try {
-        // ভিডিওর ইনফরমেশন পাওয়ার চেষ্টা
-        const info = await ytdl.getInfo(videoURL, {
-            requestOptions: {
-                headers: {
-                    // এটি ইউটিউবকে বোঝাবে যে এটি একটি আসল ক্রোম ব্রাউজার
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                    'Connection': 'keep-alive',
-                }
+        const response = await axios.get(url, {
+            httpsAgent: agent,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
             }
         });
-
-        const title = info.videoDetails.title.replace(/[^\x00-\x7F]/g, "") || "video";
-        
-        res.header('Content-Disposition', `attachment; filename="${title}.mp4"`);
-
-        // ডাউনলোড শুরু
-        ytdl(videoURL, {
-            format: 'mp4',
-            quality: 'highest', // বা '18' দিতে পারেন যা ৩৬০পি নিশ্চিত করবে
-            filter: 'audioandvideo',
-            requestOptions: {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                    'Cookie': '' // এখানে কুকি দিলে ১০০% কাজ করবে, তবে আপাতত খালি রাখুন
-                }
-            }
-        }).pipe(res);
-
-    } catch (err) {
-        console.error('Detailed Error:', err.message);
-        res.status(500).json({ 
-            error: 'Failed to process video.', 
-            reason: err.message,
-            tip: 'ইউটিউব অনেক সময় ক্লাউড আইপি ব্লক করে দেয়। কিছুক্ষণ পর আবার চেষ্টা করুন।' 
-        });
+        return response.data;
+    } catch (error) {
+        console.error(`Proxy ${proxyUrl} failed. Retrying...`);
+        // এরর হলে অন্য একটি প্রক্সি দিয়ে ট্রাই করা যেতে পারে
+        throw error;
     }
-});
-
+}
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`API is active on port ${PORT}`);
